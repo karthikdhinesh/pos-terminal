@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">NexusPOS Quantum Pro</title>
+    <!-- ChartJS Framework Engine (daily revenue bar graph) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        :root {
+            --bg-base: #030712;
+            --panel-bg: #0f172a;
+            --panel-border: rgba(255, 255, 255, 0.06);
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.4);
+            --accent: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --font-ui: 'Plus Jakarta Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        /* REMOVE ALL SCROLLBARS GLOBALLY */
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: var(--font-ui);
+            scrollbar-width: none; 
+            -ms-overflow-style: none; 
+        }
+        *::-webkit-scrollbar {
+            display: none; 
+        }
+
+        body { background: var(--bg-base); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; flex-direction: column; transition: background 0.2s ease; }
+
+        /* --- AUTH SCREEN --- */
+        #login-screen { position: fixed; inset: 0; z-index: 9999; background: radial-gradient(circle at center, #0f172a 0%, #030712 100%); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .auth-card { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid var(--panel-border); padding: 40px; border-radius: 24px; width: 100%; max-width: 400px; text-align: center; }
+        .input-box { width: 100%; background: #020617; border: 1px solid var(--panel-border); padding: 14px 16px; border-radius: 12px; color: #fff; margin-bottom: 16px; outline: none; font-size: 14px; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); color: white; border: none; width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; text-shadow: 0 1px 2px rgba(0,0,0,0.2); text-align: center; transition: all 0.2s; }
+
+        /* --- NAVIGATION LAYOUT --- */
+        header { background-color: #0b0f19; padding: 16px 24px; border-bottom: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center; shrink: 0; z-index: 100; width: 100%; }
+        .nav-group { display: flex; gap: 8px; background: #05070c; padding: 4px; border-radius: 12px; border: 1px solid var(--panel-border); }
+        .nav-btn { background: transparent; color: var(--text-muted); border: none; padding: 8px 16px; font-size: 12px; font-weight: 700; border-radius: 8px; cursor: pointer; }
+        .nav-btn.active-pane, .nav-btn:hover { background: var(--primary); color: #fff; }
+
+        /* ROOT VIEW CONTAINER FRAMEWORK */
+        .app-shell-body { display: flex; flex: 1; width: 100vw; height: calc(100vh - 73px); overflow: hidden; position: relative; }
+        .view-pane { display: none; width: 100%; height: 100%; overflow: hidden; }
+        .view-pane.active-pane { display: flex !important; }
+
+        /* SIDE-BY-SIDE VIEWPORT CORES */
+        .pos-split-layout { display: flex !important; flex-direction: row !important; width: 100vw; height: 100%; overflow: hidden; }
+        .catalog-panel-view { flex: 1; padding: 24px; overflow-y: auto; background: #070a13; display: flex; flex-direction: column; gap: 20px; height: 100%; }
+        .search-bar { background: var(--panel-bg); border: 1px solid var(--panel-border); padding: 14px 20px; border-radius: 12px; display: flex; gap: 12px; align-items: center; }
+        .search-bar input { background: transparent; border: none; color: #fff; outline: none; width: 100%; font-size: 14px; }
+        .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--catalog-col-min, 220px), 1fr)); gap: 16px; }
+        
+        .product-card { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--panel-border); padding: 18px; border-radius: 16px; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; height: 160px; }
+        .product-card:hover { border-color: rgba(59, 130, 246, 0.4); transform: translateY(-3px); }
+
+        /* IMMUTABLE RIGHT CHECKOUT SIDEBAR PANEL */
+        .cart-checkout-sidebar-panel { 
+            width: 440px !important; 
+            min-width: 440px !important; 
+            max-width: 440px !important;
+            background: var(--panel-bg); 
+            border-left: 1px solid var(--panel-border); 
+            display: flex !important; 
+            flex-direction: column !important; 
+            height: 100% !important; 
+            overflow: hidden !important;
+            flex-grow: 0 !important;
+            flex-shrink: 0 !important;
+        }
+        .cart-header { padding: 20px; border-bottom: 1px solid var(--panel-border); }
+        .crm-box { background: rgba(59, 130, 246, 0.04); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: 12px; padding: 14px; margin-top: 12px; display: flex; gap: 8px; flex-direction: column; }
+        .crm-box input { background: #020617; border: 1px solid var(--panel-border); padding: 10px 12px; border-radius: 8px; color: #fff; font-size: 12px; outline: none; }
+        
+        .cart-list { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+        .cart-item { background: #020617; border: 1px solid var(--panel-border); padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .qty-btn { background: var(--panel-bg); border: 1px solid var(--panel-border); color: #fff; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; }
+
+        .settlement-box { background: #020617; border-top: 1px solid var(--panel-border); padding: 20px; display: flex; flex-direction: column; gap: 12px; shrink: 0; }
+        .calc-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); align-items: center; }
+        .calc-input { background: #020617; border: 1px solid var(--panel-border); color: var(--warning); text-align: center; width: 120px; padding: 6px; border-radius: 6px; outline: none; font-weight: bold; font-family: var(--font-mono); font-size: 12px; }
+        
+        .payment-tabs { display: flex; background: var(--panel-bg); border-radius: 10px; padding: 4px; border: 1px solid var(--panel-border); }
+        .pay-tab { flex: 1; text-align: center; padding: 8px; font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; border-radius: 6px; }
+        .pay-tab.active { background: var(--primary); color: #fff; }
+
+        .split-pay-grid { display: flex; flex-direction: column; gap: 8px; background: var(--panel-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--panel-border); }
+        .split-pay-grid input { background: #020617; border: 1px solid var(--panel-border); padding: 8px; border-radius: 6px; color: #fff; text-align: right; width: 120px; font-family: var(--font-mono); outline: none; }
+
+        /* --- ERP & SUBWORKSPACES --- */
+        .page-wrapper { width: 100%; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; background: #070a13; height: 100%; }
+        .grid-panel { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; }
+        .card-container { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 16px; padding: 24px; }
+        .form-group { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .data-table th, .data-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--panel-border); }
+        .data-table th { background: rgba(255,255,255,0.02); color: var(--text-muted); }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .stat-card { background: var(--panel-bg); border: 1px solid var(--panel-border); padding: 24px; border-radius: 16px; }
+
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 5000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: var(--panel-bg); border: 1px solid var(--panel-border); padding: 24px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; }
+        .modal-body-wrapper { background: white; padding: 24px; border-radius: 12px; width: 100%; max-width: 900px; max-height: 85vh; overflow-y: auto; }
+
+        /* --- HIGH CONTRAST REPLICA INVOICE --- */
+        .screenshot-invoice-container { width: 100%; background: white !important; color: black !important; font-family: Arial, sans-serif; font-size: 13px; border: 2px solid #000; box-sizing: border-box; text-align: left; margin: 0 auto; }
+        .invoice-branding-hdr { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 2px solid #000; background: white !important; }
+        .invoice-logo-wrapper { max-width: 150px; max-height: 80px; display: flex; align-items: center; }
+        .invoice-logo-wrapper img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .scr-table { width: 100%; border-collapse: collapse; }
+        .scr-table th, .scr-table td { border: 1px solid #000 !important; padding: 10px; vertical-align: top; text-align: left; color: black !important; background: white !important; }
+        .scr-table th { font-weight: bold; background: #f1f5f9 !important; }
+        .scr-summary-box { display: grid; grid-template-columns: 1.5fr 1fr; border-top: 1px solid #000; background: white !important; }
+        .scr-summary-left { padding: 10px; border-right: 1px solid #000; line-height: 1.6; color: black !important; }
+        .summary-row { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid #000; color: black !important; }
+        .scr-payment-details-box { border-top: 2px solid #000; padding: 10px; background: #fff !important; color: black !important; }
+
+        .btn-danger-action { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); font-size: 10px; font-weight: bold; padding: 4px 8px; border-radius: 6px; cursor: pointer; margin-top: 4px; }
+
+        /* SINGLE CANVAS PRINT RE-RENDERING ENGINE CSS OVERRIDES */
+        @media print {
+            body { background: white !important; color: black !important; }
+            #main-app-layout-wrapper { display: none !important; }
+            #print-canvas-thread-slot { display: block !important; position: absolute; left: 0; top: 0; width: 100% !important; background: white !important; color: black !important; }
+            .screenshot-invoice-container { border: 2px solid #000 !important; width: 100% !important; }
+            .scr-table th, .scr-table td { border: 1px solid #000 !important; color: black !important; background: white !important; }
+        }
+        #print-canvas-thread-slot { display: none; }
+
+        /* Remove number input spin/scroll buttons everywhere */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+        .user-action-btn { background:var(--primary); color:#fff; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px; margin-right:4px; }
+        .user-action-btn.danger { background:var(--danger); }
+
+        /* --- BRAND THEME STUDIO (ADMIN CUSTOMIZATION) --- */
+        .theme-swatch-row { display: flex; flex-wrap: wrap; gap: 16px; }
+        .swatch-field { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .swatch-field label { font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .swatch-field input[type="color"] { -webkit-appearance: none; appearance: none; width: 44px; height: 44px; border-radius: 12px; border: 2px solid var(--panel-border); background: none; cursor: pointer; padding: 0; }
+        .swatch-field input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; border-radius: 10px; }
+        .swatch-field input[type="color"]::-webkit-color-swatch { border: none; border-radius: 10px; }
+
+        .density-slider { width: 100%; accent-color: var(--primary); }
+        .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .theme-preset-chip { background: var(--bg-base); border: 1px solid var(--panel-border); color: var(--text-muted); font-size: 11px; font-weight: 700; padding: 6px 12px; border-radius: 8px; cursor: pointer; }
+        .theme-preset-chip:hover { border-color: var(--primary); color: #fff; }
+
+        .backup-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-outline { background: transparent; border: 1px solid var(--panel-border); color: var(--text-main); padding: 10px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-outline-danger { background: transparent; border: 1px solid rgba(239,68,68,0.4); color: var(--danger); padding: 10px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; grid-column: 1 / -1; }
+        .btn-outline-danger:hover { background: rgba(239,68,68,0.1); }
+        #restore-file-input { display: none; }
+
+        .history-row-clickable { cursor: pointer; transition: background 0.15s; }
+        .history-row-clickable:hover { background: rgba(59, 130, 246, 0.06); }
+
+        .low-stock-badge { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+        .toast-notice { position: fixed; bottom: 24px; right: 24px; background: var(--panel-bg); border: 1px solid var(--panel-border); border-left: 3px solid var(--success); padding: 14px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; z-index: 9998; box-shadow: 0 10px 30px rgba(0,0,0,0.4); opacity: 0; transform: translateY(10px); transition: all 0.25s ease; pointer-events: none; }
+        .toast-notice.show { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <!-- DOM PRINT MATRIX INTERCEPT SLOT -->
+    <div id="print-canvas-thread-slot"></div>
+
+    <div id="main-app-layout-wrapper" style="display: contents;">
+
+        <!-- SEEDING ACCESSIBILITY GATE OVERLAY -->
+        <div id="login-screen">
+            <div class="auth-card">
+                <div style="width:60px; height:60px; background:linear-gradient(135deg, var(--primary), var(--accent)); border-radius:16px; margin: 0 auto 20px auto; display:flex; align-items:center; justify-content:center; font-size:24px;">🧬</div>
+                <h2 id="auth-title" style="font-size:24px; font-weight:800; margin-bottom:4px;">NexusPOS Quantum</h2>
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:32px;">Enterprise ERP & Retail Checkout Suite</p>
+                <input type="text" id="login-username" class="input-box" placeholder="Operator Profile ID" onkeydown="if(event.key==='Enter') document.getElementById('login-password').focus()">
+                <input type="password" id="login-password" class="input-box" placeholder="Security Password PIN" onkeydown="if(event.key==='Enter') processLogin()">
+                <button class="btn-primary" style="display:block; width:100%;" onclick="processLogin()">Unlock Terminal Dashboard</button>
+                <div id="login-error" style="display:none; color:var(--danger); font-size:13px; margin-top:16px; font-weight:600;">Authentication parameters mismatched.</div>
+            </div>
+        </div>
+
+        <!-- NAVIGATION TOP BAR -->
+        <header id="global-nav-bar" style="display:none;">
+            <div style="display:flex; align-items:center; gap:24px;">
+                <h2 id="brand-name-display" style="font-size:18px; font-weight:800;">NexusPOS Quantum ⚡</h2>
+                <div class="nav-group" id="nav-button-group">
+                    <button class="nav-btn active-pane" id="pane-link-register" onclick="switchWorkspacePane('register', this)">🛒 Register Checkout</button>
+                    <button class="nav-btn" id="pane-link-inventory" onclick="switchWorkspacePane('inventory', this)">📦 Warehouse Stock ERP</button>
+                    <button class="nav-btn" id="pane-link-analytics" onclick="switchWorkspacePane('analytics', this)">📊 Analytics BI Dashboard</button>
+                    <button class="nav-btn nav-admin-only" id="nav-admin" onclick="switchWorkspacePane('admin', this)">⚙️ Global Configurations</button>
+                </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:16px;">
+                <span id="active-operator-name" style="font-size:13px; font-weight:700;">Operator</span>
+                <button style="background:transparent; border:1px solid var(--danger); color:var(--danger); padding:6px 12px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer;" onclick="logout()">Disconnect</button>
+            </div>
+        </header>
+
+        <!-- APPLICATION VIEW WRAPPERS -->
+        <div class="app-shell-body" id="app-main-shell" style="display:none;">
+            
+            <!-- VIEW VIEWPORT 1: CHECKOUT TERMINALS -->
+            <div class="view-pane active-pane" id="pane-register">
+                <div class="pos-split-layout">
+                    <main class="catalog-panel-view">
+                        <div class="search-bar">
+                            <span style="font-size:18px;">🔍</span>
+                            <input type="text" id="catalog-search" placeholder="Scan Barcode Gun or Query SKU/Product Naming Metrics..." oninput="filterCatalog()">
+                        </div>
+                        <div class="catalog-grid" id="products-grid"></div>
+                    </main>
+
+                    <!-- FORCE RIGID LOCKED UNCOLLAPSIBLE SIDEBAR PANEL -->
+                    <aside class="cart-checkout-sidebar-panel">
+                        <div class="cart-header">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <h3 style="font-size:14px; font-weight:800; text-transform:uppercase;">Active Order Statements</h3>
+                                <span id="cart-count" style="background:rgba(59, 130, 246, 0.2); color:var(--primary); padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold;">0 SKUs</span>
+                            </div>
+                            <div class="crm-box" id="crm-validation-target">
+                                <span style="font-size:10px; font-weight:800; color:var(--primary); text-transform:uppercase;">Customer CRM Guard (Enforced Validation)</span>
+                                <div style="display:flex; gap:8px;">
+                                    <input type="text" id="crm-phone" placeholder="Phone Link Identifier" oninput="lookupCustomer()">
+                                    <input type="text" id="crm-name" placeholder="Full Customer Name">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="cart-list" id="cart-list"></div>
+
+                        <div id="order-confirm-slot"></div>
+
+                        <div class="settlement-box" id="settlement-box" style="display:none;">
+                            <button style="background:transparent; border:1px solid var(--panel-border); color:var(--text-muted); padding:8px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;" onclick="backToOrderEditing()">← Back to Order</button>
+                            <div class="payment-tabs">
+                                <div class="pay-tab active" id="tab-cash" onclick="setPrimaryPayMode('Cash')">💵 Cash</div>
+                                <div class="pay-tab" id="tab-upi" onclick="setPrimaryPayMode('UPI')">📱 UPI</div>
+                                <div class="pay-tab" id="tab-card" onclick="setPrimaryPayMode('Card')">📟 Card</div>
+                            </div>
+
+                            <div class="split-pay-grid">
+                                <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-weight:bold; color:var(--text-muted);">
+                                    <span>SPLIT SETTLEMENT LEDGER RECONCILIATION</span>
+                                    <button style="background:var(--primary); border:none; color:white; font-size:9px; padding:3px 6px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="forceAutoBalanceValues()">Auto-Fill Balance</button>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--text-muted);">Cash Box Pay</span><input type="number" step="0.01" id="split-cash" value="" oninput="handleSmartAutoSplitPayment('Cash')"></div>
+                                <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--text-muted);">UPI Dynamic <button style="background:var(--accent); color:#fff; border:none; padding:2px 6px; border-radius:4px; font-size:9px; cursor:pointer;" onclick="showQrModal()">Show QR</button></span><input type="number" step="0.01" id="split-upi" value="" oninput="handleSmartAutoSplitPayment('UPI')"></div>
+                                <div style="display:flex; flex-direction:column; gap:6px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--text-muted);">Card Gateway</span><input type="number" step="0.01" id="split-card" value="" oninput="handleSmartAutoSplitPayment('Card')"></div>
+                                    <div style="display:flex; justify-content:flex-end;"><input type="text" id="split-card-txnid" placeholder="POS Machine Txn ID" style="text-align:left; width:100%; font-size:11px;"></div>
+                                </div>
+                                <div style="font-size:11px; font-weight:bold; text-align:right;" id="balance-alert">Target Synced</div>
+                            </div>
+
+                            <div style="display:flex; flex-direction:column; gap:6px;">
+                                <div class="calc-row"><span>Taxable Net Cost Value</span><span id="lbl-sub">₹0.00</span></div>
+                                <div class="calc-row">
+                                    <span>Validate Coupon Code</span>
+                                    <div style="display:flex; gap:6px; align-items:center;">
+                                        <input type="text" id="inp-coupon-code" class="calc-input" style="width:100px;" placeholder="Apply Code" onkeydown="if(event.key==='Enter'){ event.preventDefault(); addCouponCode(); }">
+                                        <button type="button" onclick="addCouponCode()" style="background:var(--primary); border:none; color:#fff; font-size:10px; font-weight:800; padding:7px 10px; border-radius:6px; cursor:pointer; white-space:nowrap;">+ Add</button>
+                                    </div>
+                                </div>
+                                <div id="applied-coupon-chips" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+                                <div class="calc-row"><span>GST Integrated Tax</span><span id="lbl-tax">₹0.00</span></div>
+                                <div class="calc-row" style="border-top:1px dashed var(--panel-border); padding-top:8px; margin-top:4px;">
+                                    <span style="font-weight:bold; color:#fff;">Gross Payable Total</span>
+                                    <span id="lbl-total" style="font-weight:800; font-size:18px; color:var(--primary);">₹0.00</span>
+                                </div>
+                            </div>
+                            
+                            <!-- INTERACTIVE SYSTEM FLOW RE-ARCHITECTURE ROUTINES -->
+                            <div id="checkout-action-button-slot" style="width:100%;">
+                                <button class="submit-checkout-trigger" style="background:var(--success); color:white; border:none; width:100%; padding:14px; border-radius:12px; font-weight:700; cursor:pointer;" onclick="executeInvoiceSettlementDataSync()">🖨️ Settle & Print Invoice</button>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+
+            <!-- VIEW VIEWPORT 2: WAREHOUSE ERP CONTROLLER -->
+            <div class="view-pane" id="pane-inventory">
+                <div class="page-wrapper">
+                    <h1 class="page-title">Warehouse Product Registry ERP</h1>
+                    <div class="grid-panel">
+                        <div class="card-container" style="height:fit-content;">
+                            <h3 id="inv-form-title" style="margin-bottom:20px; font-weight:700; border-bottom:1px solid var(--panel-border); padding-bottom:10px;">Modify Stock Node</h3>
+                            <input type="hidden" id="erp-id">
+                            <div class="form-group"><label>Product Title / Model Name</label><input type="text" id="erp-name" class="input-box" style="margin:0;"></div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                                <div class="form-group"><label>Wholesale Price (INR)</label><input type="number" id="erp-price" class="input-box" style="margin:0;"></div>
+                                <div class="form-group"><label>Stock Reserve units</label><input type="number" id="erp-stock" class="input-box" style="margin:0;"></div>
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                                <div class="form-group"><label>HSN Classification</label><input type="text" id="erp-hsn" class="input-box" style="margin:0;"></div>
+                                <div class="form-group"><label>Serial (SNO)</label><input type="text" id="erp-sno" class="input-box" style="margin:0;"></div>
+                            </div>
+                            <button class="btn-primary" style="margin-top:10px; width:100%;" onclick="saveERPProduct()">Save Changes</button>
+                            <button class="btn-outline" style="margin-top:8px; width:100%;" onclick="clearERPForm()">+ New Product / Cancel Edit</button>
+                        </div>
+                        <div class="card-container" style="overflow-y:auto; max-height:calc(100vh - 160px);">
+                            <table class="data-table">
+                                <thead><tr><th>Item Info Description</th><th>HSN/SNO Metrics</th><th>Base Price</th><th>Stock Volume</th><th>Action</th></tr></thead>
+                                <tbody id="erp-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW VIEWPORT 3: FINANCIAL INTEL -->
+            <div class="view-pane" id="pane-analytics">
+                <div class="page-wrapper">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h1 class="page-title">Enterprise BI Intelligence Sub-Center</h1>
+                        <div style="display:flex; gap:12px;">
+                            <button style="background:var(--panel-bg); border:1px solid var(--panel-border); color:#fff; padding:10px 20px; border-radius:8px; font-weight:600; cursor:pointer;" onclick="exportHistoryCSV()">⬇️ Export CSV</button>
+                            <button id="btn-reset-analytics" style="display:none; background:transparent; border:1px solid var(--danger); color:var(--danger); padding:10px 20px; border-radius:8px; font-weight:600; cursor:pointer;" onclick="resetAnalyticsDashboard()">♻️ Reset Analytics</button>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card"><div style="color:var(--text-muted); font-size:12px; font-weight:600; text-transform:uppercase;">Gross Revenue (Today)</div><div id="stat-rev" style="font-size:24px; font-weight:800; color:var(--success); margin-top:8px;">₹0</div></div>
+                        <div class="stat-card"><div style="color:var(--text-muted); font-size:12px; font-weight:600; text-transform:uppercase;">Invoices Finalized (Today)</div><div id="stat-inv" style="font-size:24px; font-weight:800; margin-top:8px;">0</div></div>
+                        <div class="stat-card"><div style="color:var(--text-muted); font-size:12px; font-weight:600; text-transform:uppercase;">Tax Yield (Today)</div><div id="stat-tax" style="font-size:24px; font-weight:800; color:var(--primary); margin-top:8px;">₹0</div></div>
+                        <div class="stat-card"><div style="color:var(--text-muted); font-size:12px; font-weight:600; text-transform:uppercase;">Discounts Relieved (Today)</div><div id="stat-disc" style="font-size:24px; font-weight:800; color:var(--warning); margin-top:8px;">₹0</div></div>
+                    </div>
+
+                    <div class="card-container">
+                        <h3 style="margin-bottom:14px; font-size:14px; font-weight:700;">Total Analytics <span style="font-weight:400; color:var(--text-muted); font-size:11px;">(All-Time Cumulative)</span></h3>
+                        <div class="stats-grid">
+                            <div class="stat-card"><div style="color:var(--text-muted); font-size:12px; font-weight:600; text-transform:uppercase;">Gross Revenue Cumulative</div><div id="stat-rev-total" style="font-size:24px; font-weight:800; color:var(--success); margin-top:8px;">₹0</div></div>
+                            <div class="stat-card"><div style="color:var(--text-muted); font-size:12px; font-weight:600; text-transform:uppercase;">Total Invoices Finalized</div><div id="stat-inv-total" style="font-size:24px; font-weight:800; margin-top:8px;">0</div></div>
+                            <div class="stat-card"><div style="color:var(--text-muted); font-size:12px; font-weight:600; text-transform:uppercase;">Tax Yield Pipeline</div><div id="stat-tax-total" style="font-size:24px; font-weight:800; color:var(--primary); margin-top:8px;">₹0</div></div>
+                            <div class="stat-card"><div style="color:var(--text-muted); font-size:12px; font-weight:600; text-transform:uppercase;">Discounts Relieved</div><div id="stat-disc-total" style="font-size:24px; font-weight:800; color:var(--warning); margin-top:8px;">₹0</div></div>
+                        </div>
+                    </div>
+
+                    <div class="card-container">
+                        <h3 style="margin-bottom:14px; font-size:14px; font-weight:700;">Daily Revenue <span style="font-weight:400; color:var(--text-muted); font-size:11px;">(bar per date · today's bar builds up fresh and resets the next day)</span></h3>
+                        <div style="max-width:520px;"><canvas id="daily-revenue-chart" style="width:100%; height:140px;"></canvas></div>
+                    </div>
+
+                    <div class="card-container">
+                        <h3 style="margin-bottom:14px; font-size:14px; font-weight:700;">Cashier Operators Performance KPIs Audit <span style="font-weight:400; color:var(--text-muted); font-size:11px;">(Today)</span></h3>
+                        <table class="data-table">
+                            <thead><tr><th>Staff ID</th><th>Tickets Settled</th><th>Gross Sales Volume</th></tr></thead>
+                            <tbody id="ana-staff-performance-tbody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="card-container">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+                            <h3 style="font-size:14px; font-weight:700;">Ledger Entries <span id="ledger-scope-label" style="font-weight:400; color:var(--text-muted); font-size:11px;">(All ledger history · click a row to view, print icon to reprint)</span></h3>
+                            <input type="text" id="ledger-search-input" class="input-box" style="width:280px; margin:0;" placeholder="🔍 Search Invoice ID / Cashier / Customer / Date" oninput="filterLedgerHistory()">
+                        </div>
+                        <table class="data-table">
+                            <thead><tr><th>S.No</th><th>Date</th><th>Transaction ID</th><th>Amount</th><th>Payment Method</th><th>Cashier</th><th>Customer Name</th><th>Customer Number</th><th>Print</th></tr></thead>
+                            <tbody id="stat-history"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW VIEWPORT 4: GLOBAL CONFIGURATIONS MODULE -->
+            <div class="view-pane" id="pane-admin">
+                <div class="page-wrapper">
+                    <h1 class="page-title">Global Control Parameters</h1>
+                    <div class="grid-panel">
+                        
+                        <div class="space-y-6">
+                            <div class="card-container space-y-4">
+                                <h3 style="font-size:14px; font-weight:700; border-bottom:1px solid var(--panel-border); padding-bottom:8px;">Access Controls Profile Configuration</h3>
+                                <input type="hidden" id="adm-editing-original-user">
+                                <div class="form-group"><label>Target Operator ID</label><input type="text" id="adm-user" class="input-box" style="margin:0;"></div>
+                                <div class="form-group"><label>Assign Password</label><input type="text" id="adm-pass" class="input-box" style="margin:0;"></div>
+                                <div style="display:flex; gap:16px;">
+                                    <div class="form-group" style="flex:1;"><label>Role</label><select id="adm-role" class="input-box" style="margin:0;"><option value="cashier">Cashier</option><option value="admin">Admin</option></select></div>
+                                    <div style="display:flex; align-items:center; gap:8px; margin-top:20px;"><input type="checkbox" id="adm-inv" style="width:18px; height:18px;"><label>ERP Access</label></div>
+                                </div>
+                                <button class="btn-primary" style="background:var(--accent); width:100%;" onclick="saveUser()">Update User DB</button>
+                                <button class="btn-outline" style="width:100%; margin-top:8px;" onclick="clearUserForm()">+ New Operator / Cancel Edit</button>
+                                <table class="data-table" style="width:100%; margin-top:16px;">
+                                    <thead><tr><th>User</th><th>Role</th><th>ERP</th><th>Visible Password</th><th>Action</th></tr></thead>
+                                    <tbody id="adm-user-list"></tbody>
+                                </table>
+                            </div>
+
+                            <div class="card-container space-y-4">
+                                <h3 style="font-size:14px; font-weight:700; border-bottom:1px solid var(--panel-border); padding-bottom:8px;">Corporate Coupon Registry Controller</h3>
+                                <input type="hidden" id="adm-editing-original-coupon">
+                                <div class="form-group"><label>Alphanumeric Promo Coupon Code</label><input type="text" id="coupon-code-input" class="input-box" style="margin:0;" placeholder="e.g. SAVE10"></div>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                                    <div class="form-group"><label>Discount Value (%)</label><input type="number" id="coupon-value-input" class="input-box" style="margin:0;" placeholder="10"></div>
+                                    <div class="form-group"><label>Maximum Usage Allocations</label><input type="number" id="coupon-limit-input" class="input-box" style="margin:0;" placeholder="5"></div>
+                                </div>
+                                <button class="btn-primary" style="background:var(--primary); width:100%;" onclick="adminProvisionNewCouponNode()">Deploy Coupon Node</button>
+                                <button class="btn-outline" style="width:100%; margin-top:8px;" onclick="clearCouponForm()">+ New Coupon / Cancel Edit</button>
+                                <table class="data-table" style="width:100%; margin-top:12px;">
+                                    <thead><tr><th>Code</th><th>Discount</th><th>Usage Count / Max Limit</th><th>Action</th></tr></thead>
+                                    <tbody id="adm-coupon-list-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="card-container">
+                            <h3 style="margin-bottom:16px; font-weight:700; border-bottom:1px solid var(--panel-border); padding-bottom:10px;">Print Engine & Whitelabel Layout Adjustments</h3>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                                <div class="form-group"><label>Enterprise Name</label><input type="text" id="cfg-name" class="input-box" style="margin:0;"></div>
+                                <div class="form-group"><label>Standard GST (%)</label><input type="number" id="cfg-gst" class="input-box" style="margin:0;"></div>
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                                <div class="form-group"><label>Merchant UPI Address (VPA)</label><input type="text" id="cfg-upi" class="input-box" style="margin:0;"></div>
+                                <div class="form-group">
+                                    <label>Hardware Print Target Mode</label>
+                                    <select id="cfg-print-mode" class="input-box" style="margin:0;">
+                                        <option value="A4">A4 Corporate Invoice (Laser/Inkjet)</option>
+                                        <option value="Thermal">80mm Thermal Receipt (POS Printer)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group"><label>Terms & Conditions (Footer)</label><input type="text" id="cfg-terms" class="input-box" style="margin:0;"></div>
+
+                            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+                                <div class="form-group"><label>Currency Symbol</label><input type="text" id="cfg-currency-symbol" class="input-box" style="margin:0;" maxlength="3" placeholder="₹"></div>
+                                <div class="form-group"><label>UPI Currency Code</label><input type="text" id="cfg-currency-code" class="input-box" style="margin:0;" maxlength="3" placeholder="INR"></div>
+                                <div class="form-group"><label>Invoice ID Prefix</label><input type="text" id="cfg-invoice-prefix" class="input-box" style="margin:0;" maxlength="6" placeholder="TXN"></div>
+                            </div>
+                            <div class="form-group"><label>Low Stock Alert Threshold (units)</label><input type="number" id="cfg-low-stock" class="input-box" style="margin:0;" min="0"></div>
+                            
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+                                <div>
+                                    <label style="font-size:12px; color:var(--text-muted); font-weight:bold; display:block; margin-bottom:6px;">Corporate Store Logo</label>
+                                    <input type="file" onchange="uploadBase64(this, 'logo')" style="font-size:12px; color:#fff;">
+                                    <div id="preview-logo" style="margin-top:10px; height:60px; background:#020617; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center;"></div>
+                                    <button class="btn-danger-action" id="del-logo-btn" onclick="purgeAsset('logo')">Wipe Active Logo</button>
+                                </div>
+                                <div>
+                                    <label style="font-size:12px; color:var(--text-muted); font-weight:bold; display:block; margin-bottom:6px;">Merchant UPI QR Code</label>
+                                    <input type="file" onchange="uploadBase64(this, 'qr')" style="font-size:12px; color:#fff;">
+                                    <div id="preview-qr" style="margin-top:10px; height:60px; background:#020617; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center;"></div>
+                                    <button class="btn-danger-action" id="del-qr-btn" onclick="purgeAsset('qr')">Wipe Active QR Code</button>
+                                </div>
+                            </div>
+                            <button class="btn-primary" style="width:100%;" onclick="saveConfig()">Save Global Configuration</button>
+                        </div>
+                    </div>
+
+                    <div class="grid-panel" style="grid-template-columns: 1fr 1fr;">
+                        <div class="card-container">
+                            <h3 style="margin-bottom:16px; font-weight:700; border-bottom:1px solid var(--panel-border); padding-bottom:10px;">🎨 Brand Theme Studio</h3>
+                            <div class="form-group"><label>Interface Accent Palette</label></div>
+                            <div class="theme-swatch-row">
+                                <div class="swatch-field"><label>Primary</label><input type="color" id="theme-primary"></div>
+                                <div class="swatch-field"><label>Accent</label><input type="color" id="theme-accent"></div>
+                                <div class="swatch-field"><label>Success</label><input type="color" id="theme-success"></div>
+                                <div class="swatch-field"><label>Warning</label><input type="color" id="theme-warning"></div>
+                                <div class="swatch-field"><label>Danger</label><input type="color" id="theme-danger"></div>
+                            </div>
+                            <div class="chip-row">
+                                <button type="button" class="theme-preset-chip" onclick="applyThemePreset('quantum')">⚡ Quantum Blue</button>
+                                <button type="button" class="theme-preset-chip" onclick="applyThemePreset('emerald')">🌿 Emerald Ops</button>
+                                <button type="button" class="theme-preset-chip" onclick="applyThemePreset('sunset')">🌅 Sunset Retail</button>
+                                <button type="button" class="theme-preset-chip" onclick="applyThemePreset('mono')">⚫ Mono Steel</button>
+                            </div>
+
+                            <div class="form-group" style="margin-top:16px;">
+                                <label>Interface Typeface</label>
+                                <select id="theme-font" class="input-box" style="margin:0;">
+                                    <option value="Plus Jakarta Sans">Plus Jakarta Sans (Default)</option>
+                                    <option value="Inter">Inter</option>
+                                    <option value="Poppins">Poppins</option>
+                                    <option value="Space Grotesk">Space Grotesk</option>
+                                    <option value="Sora">Sora</option>
+                                    <option value="Manrope">Manrope</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Catalog Card Density: <span id="density-label">220px</span></label>
+                                <input type="range" id="theme-density" class="density-slider" min="160" max="320" step="10">
+                            </div>
+
+                            <button class="btn-primary" style="width:100%; margin-top:8px;" onclick="saveTheme()">Apply Theme Changes</button>
+                            <button class="btn-outline" style="width:100%; margin-top:8px;" onclick="resetThemeToDefault()">Reset Theme to Factory Default</button>
+                        </div>
+
+                        <div class="card-container">
+                            <h3 style="margin-bottom:16px; font-weight:700; border-bottom:1px solid var(--panel-border); padding-bottom:10px;">🗄️ Data Control Center</h3>
+                            <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px; line-height:1.6;">Full system snapshot includes products, users, coupons, ledger history, branding assets and theme configuration.</p>
+                            <div class="backup-actions-grid">
+                                <button class="btn-outline" onclick="exportFullBackup()">⬇️ Export Full Backup</button>
+                                <button class="btn-outline" onclick="document.getElementById('restore-file-input').click()">⬆️ Restore Backup</button>
+                                <input type="file" id="restore-file-input" accept="application/json" onchange="importFullBackup(this)">
+                                <button class="btn-outline-danger" onclick="factoryResetSystem()">⚠️ Factory Reset (Wipe All Data)</button>
+                            </div>
+                            <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--panel-border);">
+                                <h3 style="font-size:13px; font-weight:700; margin-bottom:10px;">System Snapshot</h3>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px; color:var(--text-muted);">
+                                    <div>Products: <strong id="snap-products" style="color:#fff;">0</strong></div>
+                                    <div>Operators: <strong id="snap-users" style="color:#fff;">0</strong></div>
+                                    <div>Coupons: <strong id="snap-coupons" style="color:#fff;">0</strong></div>
+                                    <div>Ledger Entries: <strong id="snap-history" style="color:#fff;">0</strong></div>
+                                    <div>Customers: <strong id="snap-customers" style="color:#fff;">0</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- MERCHANDISE MERCHANT UPI QR POPUP OVERLAY MODAL -->
+    <div class="modal-overlay" id="qr-modal">
+        <div class="modal-content">
+            <h3 style="font-weight:800; font-size:20px; margin-bottom:8px; color: white;">Scan to Pay</h3>
+            <p id="qr-amount-txt" style="color:var(--text-muted); margin-bottom:16px; font-size:14px;"></p>
+            <div id="qr-img-box" style="background:#fff; width:220px; height:220px; margin:0 auto 20px auto; border-radius:12px; display:flex; align-items:center; justify-content:center; overflow:hidden;"></div>
+            <button class="btn-primary" style="width:100%;" onclick="closeQrModal()">Done</button>
+        </div>
+    </div>
+
+    <!-- LEDGER AUDIT PREVIEW MODAL -->
+    <div class="modal-overlay" id="invoice-modal" onclick="closeInvoiceModal()">
+        <div class="modal-body-wrapper" onclick="event.stopPropagation()">
+            <div id="modal-invoice-body"></div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn-primary" style="background:var(--primary); flex:1;" onclick="reprintLedgerInvoice(currentArchiveIdx)">🖨️ Print Invoice</button>
+                <button class="btn-primary" style="background:#0f172a; flex:1;" onclick="closeInvoiceModal()">Close View Window</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SYSTEM TOAST NOTIFICATION SLOT -->
+    <div class="toast-notice" id="toast-notice"></div>
+
+    <script>
+        /* === SYSTEM MEMORY ARCHITECTURE AND CONFIG PERSISTENCE === */
+        let products = JSON.parse(localStorage.getItem('n_prod')) || [
+            { id: 1, name: 'MG6L4HN/A iPhone 17 256GB Mist Blue', price: 67288.14, stock: 15, hsn: '85171300', sno: '357236869092022' },
+            { id: 2, name: 'STRG10KBK ST-ROGER 10000MAH MS PWR BNK-95577-BLK', price: 3050.34, stock: 22, hsn: '85078000', sno: 'CBHU272352' },
+            { id: 3, name: 'RB-17-LNCLR ROBOCARE CAMERA LENS PROT', price: 655.93, stock: 45, hsn: '70071900', sno: 'CBHU232704' }
+        ];
+        
+        let users = JSON.parse(localStorage.getItem('n_users')) || [
+            { user: 'admin', pass: 'admin123', role: 'admin', inv: true },
+            { user: 'Gowtham', pass: '7890', role: 'cashier', inv: false }
+        ];
+        // Safety net: if there are ever zero user accounts on load (e.g. from an older data
+        // wipe, or storage corruption), always fall back to a single default admin login so
+        // nobody gets permanently locked out of the system.
+        if(users.length === 0) {
+            users = [{ user: 'admin', pass: 'admin123', role: 'admin', inv: true }];
+        }
+        localStorage.setItem('n_users', JSON.stringify(users));
+
+        let coupons = JSON.parse(localStorage.getItem('n_coupons')) || [
+            { code: 'SAVE10', value: 10, limit: 5, used: 0 },
+            { code: 'PLATINUM', value: 25, limit: 2, used: 0 }
+        ];
+
+        let historyDb = JSON.parse(localStorage.getItem('n_hist')) || [];
+        let customers = JSON.parse(localStorage.getItem('n_customers')) || [];
+
+        const DEFAULT_CONFIG = { name: "NexusPOS Platinum", upi: "dhineshkarthik252007-1@okaxis", gst: 18, mode: 'A4', terms: "Goods once sold cannot be returned.", currency: "₹", currencyCode: "INR", invoicePrefix: "TXN", lowStock: 5 };
+        let config = Object.assign({}, DEFAULT_CONFIG, JSON.parse(localStorage.getItem('n_cfg')) || {});
+
+        const DEFAULT_THEME = { primary: '#3b82f6', accent: '#8b5cf6', success: '#10b981', warning: '#f59e0b', danger: '#ef4444', font: 'Plus Jakarta Sans', density: 220 };
+        let theme = Object.assign({}, DEFAULT_THEME, JSON.parse(localStorage.getItem('n_theme')) || {});
+
+        let b64Logo = localStorage.getItem('n_logo') || '';
+        let b64Qr = localStorage.getItem('n_qr') || '';
+        
+        let session = null; let cart = []; let primaryPayMode = 'Cash'; let chartInst = null; let appliedCoupons = []; let orderConfirmed = false;
+
+        /* Total stacked discount % across all applied coupons (capped at 100%) */
+        function getActiveDiscountPercentage() {
+            return Math.min(100, appliedCoupons.reduce((s, c) => s + c.value, 0));
+        }
+        /* Comma-joined display string of all currently applied coupon codes */
+        function getActiveAppliedCouponCodeString() {
+            return appliedCoupons.map(c => c.code).join(', ');
+        }
+
+        /* === SHARED UTILITIES === */
+        function escapeHtml(str) {
+            if(str === null || str === undefined) return '';
+            return String(str).replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+        }
+
+        function fmtCurrency(amount) {
+            const n = Number(amount); return `${config.currency || '₹'}${(isNaN(n) ? 0 : n).toFixed(2)}`;
+        }
+
+        function showToast(message) {
+            const t = document.getElementById('toast-notice'); if(!t) return;
+            t.textContent = message; t.classList.add('show');
+            clearTimeout(t._timer); t._timer = setTimeout(() => t.classList.remove('show'), 2800);
+        }
+
+        function numToWords(amountStr) {
+            const num = Math.floor(Number(amountStr) || 0);
+            const paise = Math.round(((Number(amountStr) || 0) - num) * 100);
+            const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+            const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+            function twoDigit(n) {
+                if(n < 20) return ones[n];
+                return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+            }
+            function threeDigit(n) {
+                if(n >= 100) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + twoDigit(n % 100) : '');
+                return twoDigit(n);
+            }
+            function convert(n) {
+                if(n === 0) return 'Zero';
+                let parts = [];
+                const crore = Math.floor(n / 10000000); n %= 10000000;
+                const lakh = Math.floor(n / 100000); n %= 100000;
+                const thousand = Math.floor(n / 1000); n %= 1000;
+                const hundred = n;
+                if(crore) parts.push(threeDigit(crore) + ' Crore');
+                if(lakh) parts.push(threeDigit(lakh) + ' Lakh');
+                if(thousand) parts.push(threeDigit(thousand) + ' Thousand');
+                if(hundred) parts.push(threeDigit(hundred));
+                return parts.join(' ');
+            }
+            let words = convert(num) + ' Rupees';
+            if(paise > 0) words += ' and ' + convert(paise) + ' Paise';
+            return words + ' Only';
+        }
+
+        window.onload = () => {
+            applyTheme();
+            document.getElementById('auth-title').innerText = config.name;
+            document.getElementById('brand-name-display').innerText = config.name;
+            loadConfigUI(); loadAdminUsers(); renderCouponAdministrationTable(); loadThemeUI(); populateCustomerDatalist();
+        };
+
+
+        /* === SECURITY PRIVILEGE LOCKS === */
+        function processLogin() {
+            const u = document.getElementById('login-username').value.trim(); const p = document.getElementById('login-password').value;
+            const match = users.find(x => x.user.toLowerCase() === u.toLowerCase() && x.pass === p);
+            document.getElementById('login-error').style.display = 'none';
+            if(match) {
+                session = match; document.getElementById('login-screen').style.display = 'none'; document.getElementById('global-nav-bar').style.display = 'flex'; document.getElementById('app-main-shell').style.display = 'flex';
+                document.getElementById('active-operator-name').innerText = session.user.toUpperCase();
+                document.getElementById('nav-admin').style.display = session.role === 'admin' ? 'flex' : 'none';
+                document.getElementById('btn-reset-analytics').style.display = session.role === 'admin' ? 'block' : 'none';
+                document.getElementById('pane-link-inventory').style.display = session.inv ? 'flex' : 'none';
+                switchWorkspacePane('register', document.querySelector('.nav-btn'));
+                document.getElementById('login-password').value = '';
+                renderCatalog(); updateCartCalculations();
+            } else { document.getElementById('login-error').style.display = 'block'; }
+        }
+
+        function logout() { session = null; cart = []; updateCartCalculations(); document.getElementById('global-nav-bar').style.display = 'none'; document.getElementById('app-main-shell').style.display = 'none'; document.getElementById('login-screen').style.display = 'flex'; document.getElementById('login-password').value = ''; }
+
+        function switchWorkspacePane(target, elem) {
+            document.querySelectorAll('.view-pane').forEach(p => p.classList.remove('active-pane'));
+            document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('active-pane'));
+            document.getElementById('pane-' + target).classList.add('active-pane');
+            if(elem) elem.classList.add('active-pane');
+            if(target === 'inventory') renderERP();
+            if(target === 'analytics') renderAnalytics();
+            if(target === 'admin') { loadConfigUI(); loadAdminUsers(); renderCouponAdministrationTable(); }
+        }
+
+        /* === COUPON ENGINE VALIDATION (multi-coupon support) === */
+        function addCouponCode() {
+            const inputField = document.getElementById('inp-coupon-code');
+            const codeString = inputField.value.trim().toUpperCase();
+
+            if(codeString === "") return;
+
+            if(appliedCoupons.some(c => c.code === codeString)) {
+                inputField.style.borderColor = "var(--danger)"; inputField.style.color = "var(--danger)";
+                showToast(`Coupon "${codeString}" is already applied.`);
+                return;
+            }
+
+            const match = coupons.find(c => c.code === codeString);
+            if(match && match.used < match.limit) {
+                appliedCoupons.push({ code: match.code, value: match.value });
+                inputField.value = '';
+                inputField.style.borderColor = "var(--panel-border)"; inputField.style.color = "var(--warning)";
+                showToast(`Coupon "${match.code}" applied.`);
+            } else {
+                inputField.style.borderColor = "var(--danger)"; inputField.style.color = "var(--danger)";
+                showToast(`Coupon "${codeString}" is invalid or fully redeemed.`);
+            }
+            renderAppliedCouponChips();
+            updateCartCalculations();
+        }
+
+        function removeAppliedCoupon(code) {
+            appliedCoupons = appliedCoupons.filter(c => c.code !== code);
+            renderAppliedCouponChips();
+            updateCartCalculations();
+        }
+
+        function renderAppliedCouponChips() {
+            const wrap = document.getElementById('applied-coupon-chips');
+            if(!wrap) return;
+            if(appliedCoupons.length === 0) { wrap.innerHTML = ''; return; }
+            wrap.innerHTML = appliedCoupons.map(c => `
+                <span style="display:flex; align-items:center; gap:6px; background:rgba(16, 185, 129, 0.12); border:1px solid var(--success); color:var(--success); font-size:11px; font-weight:700; padding:4px 6px 4px 10px; border-radius:999px;">
+                    ${escapeHtml(c.code)} (${c.value}%)
+                    <button type="button" onclick="removeAppliedCoupon('${c.code.replace(/'/g, "\\'")}')" style="background:transparent; border:none; color:var(--success); cursor:pointer; font-size:13px; font-weight:800; line-height:1; padding:0 2px;">&times;</button>
+                </span>
+            `).join('');
+        }
+
+        function adminProvisionNewCouponNode() {
+            const originalCode = document.getElementById('adm-editing-original-coupon').value;
+            const code = document.getElementById('coupon-code-input').value.trim().toUpperCase();
+            const val = parseInt(document.getElementById('coupon-value-input').value);
+            const lim = parseInt(document.getElementById('coupon-limit-input').value);
+            if(!code || isNaN(val) || isNaN(lim) || val <= 0 || lim <= 0) return;
+
+            if(originalCode) {
+                // Editing an existing coupon (rename-aware)
+                let idx = coupons.findIndex(c => c.code === originalCode); if(idx === -1) return;
+                if(originalCode !== code && coupons.some(c => c.code === code)) { alert("Code duplicate detected."); return; }
+                coupons[idx] = { code: code, value: val, limit: lim, used: coupons[idx].used };
+            } else {
+                if(coupons.some(c => c.code === code)) { alert("Code duplicate detected."); return; }
+                coupons.push({ code: code, value: val, limit: lim, used: 0 });
+            }
+            localStorage.setItem('n_coupons', JSON.stringify(coupons));
+            clearCouponForm();
+            renderCouponAdministrationTable();
+        }
+
+        function clearCouponForm() {
+            document.getElementById('adm-editing-original-coupon').value = '';
+            document.getElementById('coupon-code-input').value = ''; document.getElementById('coupon-value-input').value = ''; document.getElementById('coupon-limit-input').value = '';
+        }
+
+        function editCouponToForm(code) {
+            const c = coupons.find(x => x.code === code); if(!c) return;
+            document.getElementById('adm-editing-original-coupon').value = c.code;
+            document.getElementById('coupon-code-input').value = c.code;
+            document.getElementById('coupon-value-input').value = c.value;
+            document.getElementById('coupon-limit-input').value = c.limit;
+        }
+
+        function deleteCoupon(code) {
+            if(!confirm(`Permanently remove coupon "${code}"?`)) return;
+            coupons = coupons.filter(c => c.code !== code);
+            localStorage.setItem('n_coupons', JSON.stringify(coupons));
+            if(document.getElementById('adm-editing-original-coupon').value === code) clearCouponForm();
+            renderCouponAdministrationTable();
+            showToast("Coupon removed.");
+        }
+
+        function renderCouponAdministrationTable() {
+            document.getElementById('adm-coupon-list-tbody').innerHTML = coupons.map(c => `
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+                    <td><strong>${escapeHtml(c.code)}</strong></td><td><span style="color:var(--warning); font-weight:bold;">${c.value}% OFF</span></td><td><code>${c.used}/${c.limit} used</code></td>
+                    <td style="display:flex; gap:8px;">
+                        <button data-edit-coupon="${escapeHtml(c.code)}" style="background:var(--panel-bg); border:1px solid var(--panel-border); color:#fff; padding:4px 8px; border-radius:6px; font-size:11px; cursor:pointer;">Edit</button>
+                        <button data-del-coupon="${escapeHtml(c.code)}" style="background:transparent; border:1px solid var(--danger); color:var(--danger); padding:4px 8px; border-radius:6px; font-size:11px; cursor:pointer;">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+            renderSystemSnapshot();
+        }
+
+        // Event delegation for coupon Edit/Delete (safe against special characters in codes)
+        document.addEventListener('click', e => {
+            const editBtn = e.target.closest('[data-edit-coupon]');
+            if(editBtn) { editCouponToForm(editBtn.dataset.editCoupon); return; }
+            const delBtn = e.target.closest('[data-del-coupon]');
+            if(delBtn) { deleteCoupon(delBtn.dataset.delCoupon); return; }
+        });
+
+        /* === POS TERMINAL CORE REVENUE GRID MAPPINGS === */
+        function renderCatalog(query = '') {
+            const q = query.toLowerCase();
+            const filtered = products.filter(p => p.name.toLowerCase().includes(q) || (p.sno && p.sno.toLowerCase().includes(q)) || (p.hsn && p.hsn.toLowerCase().includes(q)));
+            document.getElementById('products-grid').innerHTML = filtered.map(p => `
+                <div class="product-card" data-pid="${p.id}" style="${p.stock <= 0 ? 'opacity:0.5; cursor:not-allowed;' : ''}">
+                    <div><div style="font-weight:700; font-size:14px; margin-bottom:8px; line-height:1.4;">${escapeHtml(p.name)}</div><div class="item-sku">SKU/SNO: ${escapeHtml(p.sno)}</div></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+                        <span style="font-size:16px; font-weight:800; color:var(--primary);">${fmtCurrency(p.price)}</span>
+                        <span style="font-size:11px; font-family:var(--font-mono); font-weight:700; color:${p.stock > 0 ? (p.stock <= config.lowStock ? 'var(--warning)' : 'var(--text-muted)') : 'var(--danger)'};">${p.stock > 0 ? 'STOCK:'+p.stock : 'OUT OF STOCK'}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Event delegation for catalog cards (safe against special characters in product names)
+        document.addEventListener('click', e => {
+            const card = e.target.closest('.product-card[data-pid]');
+            if(card) addToCart(parseInt(card.dataset.pid));
+        });
+
+        // Prevent mouse-wheel from silently changing focused number input values
+        document.addEventListener('wheel', e => {
+            if(document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.type === 'number') {
+                document.activeElement.blur();
+            }
+        }, { passive: true });
+
+        function filterCatalog() { renderCatalog(document.getElementById('catalog-search').value); }
+
+        function addToCart(id) {
+            const p = products.find(x => x.id === id); if(!p || p.stock <= 0) return;
+            const item = cart.find(x => x.id === id);
+            if(item) { if(item.quantity >= p.stock) return; item.quantity++; } else { cart.push({ ...p, quantity: 1 }); }
+            updateCartCalculations();
+        }
+
+        function changeBasketQty(id, amt) {
+            const item = cart.find(x => x.id === id); const p = products.find(x => x.id === id); if(!item) return;
+            if(amt > 0 && item.quantity >= p.stock) return; item.quantity += amt;
+            if(item.quantity <= 0) cart = cart.filter(x => x.id !== id); updateCartCalculations();
+        }
+
+        function setPrimaryPayMode(mode) {
+            primaryPayMode = mode; document.querySelectorAll('.pay-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + mode.toLowerCase()).classList.add('active');
+            updateCartCalculations();
+        }
+
+        function getActiveGrossBillTotal() {
+            const base = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+            const discountAmt = base * (getActiveDiscountPercentage() / 100);
+            const taxable = base - discountAmt;
+            return taxable + (taxable * (config.gst / 100));
+        }
+
+        function renderOrderConfirmSlot() {
+            const slot = document.getElementById('order-confirm-slot');
+            const settlementBox = document.getElementById('settlement-box');
+            if(cart.length === 0) {
+                orderConfirmed = false;
+                slot.innerHTML = '';
+                settlementBox.style.display = 'none';
+                return;
+            }
+            if(!orderConfirmed) {
+                slot.innerHTML = `<div style="padding:16px;"><button class="btn-primary" style="background:var(--primary); width:100%;" onclick="confirmOrderProceedToPayment()">✅ Confirm Order & Proceed to Payment</button></div>`;
+                settlementBox.style.display = 'none';
+            } else {
+                slot.innerHTML = '';
+                settlementBox.style.display = 'flex';
+            }
+        }
+
+        function confirmOrderProceedToPayment() {
+            if(cart.length === 0) return;
+            orderConfirmed = true;
+            renderOrderConfirmSlot();
+        }
+
+        function backToOrderEditing() {
+            orderConfirmed = false;
+            renderOrderConfirmSlot();
+        }
+
+        function updateCartCalculations() {
+            document.getElementById('cart-count').innerText = `${cart.reduce((s,i)=>s+i.quantity,0)} Items`;
+            const list = document.getElementById('cart-list');
+            if(cart.length === 0) list.innerHTML = `<div style="text-align:center; padding:40px 0; color:var(--text-muted); font-size:13px;">Cart is empty</div>`;
+            else {
+                list.innerHTML = cart.map(i => `
+                    <div class="cart-item">
+                        <div style="flex:1; padding-right:10px; overflow:hidden;">
+                            <div style="font-size:13px; font-weight:700; margin-bottom:4px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(i.name)}</div>
+                            <div style="color:var(--primary); font-size:12px; font-weight:600;">${fmtCurrency(i.price)}</div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <button class="qty-btn" onclick="changeBasketQty(${i.id}, -1)">-</button><span style="font-size:13px; font-weight:700; width:16px; text-align:center;">${i.quantity}</span><button class="qty-btn" onclick="changeBasketQty(${i.id}, 1)">+</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            const base = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+            const discountAmt = base * (getActiveDiscountPercentage() / 100);
+            const taxable = base - discountAmt;
+            const gstAmt = taxable * (config.gst / 100);
+            const gross = taxable + gstAmt;
+
+            document.getElementById('lbl-sub').innerText = fmtCurrency(base);
+            document.getElementById('lbl-tax').innerText = fmtCurrency(gstAmt);
+            document.getElementById('lbl-total').innerText = fmtCurrency(gross);
+
+            forceAutoBalanceValues();
+            renderOrderConfirmSlot();
+        }
+
+        function forceAutoBalanceValues() {
+            const targetGross = getActiveGrossBillTotal();
+            splitDirty.cash = false; splitDirty.upi = false; splitDirty.card = false;
+            document.getElementById('split-cash').value = primaryPayMode === 'Cash' ? targetGross.toFixed(2) : "";
+            document.getElementById('split-upi').value = primaryPayMode === 'UPI' ? targetGross.toFixed(2) : "";
+            document.getElementById('split-card').value = primaryPayMode === 'Card' ? targetGross.toFixed(2) : "";
+            calcSplit(targetGross);
+        }
+
+        function resetCRMStyles() {
+            document.getElementById('crm-validation-target').style.borderColor = 'rgba(59, 130, 246, 0.15)';
+            document.getElementById('crm-validation-target').style.background = 'rgba(59, 130, 246, 0.04)';
+        }
+
+        /* === CUSTOMER DATABASE (CRM PERSISTENCE) === */
+        function populateCustomerDatalist() {
+            const dl = document.getElementById('crm-customer-phones'); if(!dl) return;
+            dl.innerHTML = customers.map(c => `<option value="${escapeHtml(c.phone)}">${escapeHtml(c.name)}</option>`).join('');
+        }
+
+        function lookupCustomer() {
+            const phone = document.getElementById('crm-phone').value.trim();
+            const nameField = document.getElementById('crm-name');
+            const match = customers.find(c => c.phone === phone);
+            if(match) nameField.value = match.name;
+        }
+
+        function saveCustomerRecord(name, phone) {
+            const idx = customers.findIndex(c => c.phone === phone);
+            if(idx > -1) { customers[idx].name = name; customers[idx].visits = (customers[idx].visits || 0) + 1; customers[idx].lastVisit = new Date().toISOString(); }
+            else { customers.push({ name, phone, visits: 1, lastVisit: new Date().toISOString() }); }
+            localStorage.setItem('n_customers', JSON.stringify(customers));
+            populateCustomerDatalist();
+        }
+
+        // Tracks which split fields the cashier has manually typed into this bill.
+        // Whichever field(s) remain untouched absorb the remaining balance automatically.
+        let splitDirty = { cash: false, upi: false, card: false };
+
+        function handleSmartAutoSplitPayment(activeInputSourceField) {
+            const key = activeInputSourceField.toLowerCase();
+            splitDirty[key] = true;
+
+            const gross = getActiveGrossBillTotal();
+            const fields = ['cash', 'upi', 'card'];
+            const values = {};
+            fields.forEach(f => { values[f] = parseFloat(document.getElementById('split-' + f).value) || 0; });
+
+            const dirtyFields = fields.filter(f => splitDirty[f]);
+            const cleanFields = fields.filter(f => !splitDirty[f]);
+
+            if(cleanFields.length === 1) {
+                // Exactly one channel left untouched — auto-fill it with whatever balance remains.
+                const sumDirty = dirtyFields.reduce((s, f) => s + values[f], 0);
+                let remainder = gross - sumDirty; if(remainder < 0) remainder = 0;
+                document.getElementById('split-' + cleanFields[0]).value = remainder > 0 ? remainder.toFixed(2) : "";
+            } else if(cleanFields.length === 2) {
+                // Only the field just edited is dirty — put the rest into the next channel,
+                // same convenience as a simple two-way split.
+                let remainder = gross - values[key]; if(remainder < 0) remainder = 0;
+                document.getElementById('split-' + cleanFields[0]).value = remainder > 0 ? remainder.toFixed(2) : "";
+                document.getElementById('split-' + cleanFields[1]).value = "";
+            }
+            // If all three fields are dirty, leave every value exactly as typed — that's a
+            // deliberate manual three-way split, so just recompute the Due/Surplus indicator.
+            calcSplit(gross);
+        }
+
+        function calcSplit(forcedGross = null) {
+            let gross = forcedGross !== null ? forcedGross : getActiveGrossBillTotal();
+            const c = parseFloat(document.getElementById('split-cash').value) || 0;
+            const u = parseFloat(document.getElementById('split-upi').value) || 0;
+            const k = parseFloat(document.getElementById('split-card').value) || 0;
+            const diff = gross - (c + u + k);
+            const alertEl = document.getElementById('balance-alert');
+            
+            if(Math.abs(diff) < 0.1) { alertEl.innerText = "Target Synced"; alertEl.style.color = "var(--success)"; }
+            else if(diff > 0) { alertEl.innerText = `Due: ${fmtCurrency(diff)}`; alertEl.style.color = "var(--danger)"; }
+            else { alertEl.innerText = `Surplus: ${fmtCurrency(Math.abs(diff))}`; alertEl.style.color = "var(--warning)"; }
+        }
+
+        /* === MERCHANT UPI QR SETTLEMENT MODAL === */
+        function showQrModal() {
+            const enteredUpi = parseFloat(document.getElementById('split-upi').value);
+            const amount = (!isNaN(enteredUpi) && enteredUpi > 0) ? enteredUpi : getActiveGrossBillTotal();
+            document.getElementById('qr-amount-txt').innerText = `Amount Due: ${fmtCurrency(amount)}`;
+            const qrBox = document.getElementById('qr-img-box');
+            if(b64Qr) {
+                qrBox.innerHTML = `<img src="${b64Qr}" style="width:100%; height:100%; object-fit:contain;">`;
+            } else if(config.upi) {
+                const upiUri = `upi://pay?pa=${encodeURIComponent(config.upi)}&pn=${encodeURIComponent(config.name)}&am=${amount.toFixed(2)}&cu=${encodeURIComponent(config.currencyCode || 'INR')}`;
+                const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiUri)}`;
+                qrBox.innerHTML = `<img src="${qrImgUrl}" alt="UPI QR" style="width:100%; height:100%; object-fit:contain;">`;
+            } else {
+                qrBox.innerHTML = `<span style="font-size:11px; color:#666; padding:10px; text-align:center;">No UPI VPA or QR asset configured. Set one in Global Configurations.</span>`;
+            }
+            document.getElementById('qr-modal').style.display = 'flex';
+        }
+
+        function closeQrModal() { document.getElementById('qr-modal').style.display = 'none'; }
+
+        /* === DUAL-STAGE SETTLEMENT DATA PROCESSING CONTEXT ENGINE === */
+        let globalCachedActivePrintMarkupTemplate = ""; 
+
+        function executeInvoiceSettlementDataSync() {
+            if(cart.length === 0) return;
+            if(!session) { alert("Session expired. Please log in again."); logout(); return; }
+
+            const crmName = document.getElementById('crm-name').value.trim();
+            const crmPhone = document.getElementById('crm-phone').value.trim();
+            if(!crmName || !crmPhone) {
+                const crmWrapper = document.getElementById('crm-validation-target');
+                crmWrapper.style.borderColor = "var(--danger)"; crmWrapper.style.background = "rgba(239, 68, 68, 0.08)";
+                alert("CRM Constraint Validation Error: Customer datasets parameters missing."); return;
+            } else if(crmPhone.replace(/\D/g, '').length < 7) {
+                const crmWrapper = document.getElementById('crm-validation-target');
+                crmWrapper.style.borderColor = "var(--danger)"; crmWrapper.style.background = "rgba(239, 68, 68, 0.08)";
+                alert("CRM Constraint Validation Error: Phone number looks invalid."); return;
+            } else { resetCRMStyles(); }
+
+            const base = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+            const discountAmt = base * (getActiveDiscountPercentage() / 100);
+            const taxable = base - discountAmt;
+            const gstAmt = taxable * (config.gst / 100);
+            const gross = taxable + gstAmt;
+
+            const c = parseFloat(document.getElementById('split-cash').value) || 0;
+            const u = parseFloat(document.getElementById('split-upi').value) || 0;
+            const k = parseFloat(document.getElementById('split-card').value) || 0;
+            const cardTxnId = document.getElementById('split-card-txnid').value.trim();
+
+            if(Math.abs(gross - (c+u+k)) > 0.5) { 
+                alert(`Rounding reconciliation error. Adjust values manually or select 'Auto-Fill Balance'.`); return; 
+            }
+
+            if(k > 0 && !cardTxnId) {
+                alert("POS Machine Transaction ID is required whenever a Card Gateway amount is entered.");
+                document.getElementById('split-card-txnid').focus();
+                return;
+            }
+
+            let activePaymentCount = 0;
+            if(c > 0) activePaymentCount++; if(u > 0) activePaymentCount++; if(k > 0) activePaymentCount++;
+            const isSplitPayment = activePaymentCount > 1;
+
+            const txn = (config.invoicePrefix || 'TXN') + Date.now().toString().slice(-6) + Math.floor(Math.random()*900);
+            const dt = new Date().toLocaleString('en-IN');
+
+            if(appliedCoupons.length > 0) {
+                appliedCoupons.forEach(ac => {
+                    let targetCouponNode = coupons.find(cp => cp.code === ac.code);
+                    if(targetCouponNode) targetCouponNode.used++;
+                });
+                localStorage.setItem('n_coupons', JSON.stringify(coupons));
+            }
+
+            // Generate layout structure text variables records
+            let rows = cart.map((i,x) => {
+                let lineSub = i.price * i.quantity; let lineDisc = lineSub - (lineSub * (getActiveDiscountPercentage()/100)); let lineTax = lineDisc * (config.gst/100);
+                return `<tr><td style="text-align:center; color: black !important;">${x+1}</td><td style="color: black !important;"><strong>${escapeHtml(i.name)}</strong><br><span style="font-size:10px;">HSN:${escapeHtml(i.hsn)} | SNO:${escapeHtml(i.sno)}</span></td><td style="text-align:center; color: black !important;">${i.quantity}</td><td style="text-align:right; color: black !important;">${i.price.toFixed(2)}</td><td style="text-align:right; color: black !important;">${lineDisc.toFixed(2)}</td><td style="text-align:right; color: black !important;">${lineTax.toFixed(2)}</td><td style="text-align:right; color: black !important;">${(lineDisc+lineTax).toFixed(2)}</td></tr>`;
+            }).join('');
+
+            let corporatePaymentSection = isSplitPayment ? 
+                `<strong>Payment Settlement Reconciliation Ledger Split Summary</strong><br><span style="font-size:11px; font-family:monospace; color:#222 !important;">Split allocations: [Cash: ${fmtCurrency(c)}] [UPI: ${fmtCurrency(u)} (${escapeHtml(config.upi)})] [POS Card: ${fmtCurrency(k)}${cardTxnId ? ` · Txn ID: ${escapeHtml(cardTxnId)}` : ''}]</span>` : 
+                `<strong>Payment Mode:</strong> <span style="font-size:12px; font-family:monospace;">${c>0?'Cash Counter Asset':u>0?'UPI Digital Route':'Card Machine POS'}</span>${(k>0 && cardTxnId) ? `<br><span style="font-size:11px; font-family:monospace; color:#222 !important;">POS Machine Txn ID: ${escapeHtml(cardTxnId)}</span>` : ''}`;
+
+            globalCachedActivePrintMarkupTemplate = `
+                <div class="screenshot-invoice-container" style="background: white !important; color: black !important; padding:20px;">
+                    <div class="invoice-branding-hdr">
+                        ${b64Logo ? `<div class="invoice-logo-wrapper"><img src="${b64Logo}" alt="logo"></div>` : '<div></div>'}
+                        <div class="invoice-title-text" style="color: black !important;"><h1 style="color: black !important; font-size:22px; margin:0;">${escapeHtml(config.name)}</h1><p style="color: black !important; margin:4px 0 0 0;">Commercial Tax Invoice / Bill Statement</p></div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:12px; font-size:12px; background:white !important; color:black !important; border-bottom:1px solid #000;">
+                        <div style="color: black !important;"><strong>Customer Details:</strong><br>Name: ${escapeHtml(crmName)}<br>Phone: ${escapeHtml(crmPhone)}</div>
+                        <div style="text-align:right; color: black !important;"><strong>Invoice Ref:</strong> ${txn}<br><strong>Date:</strong> ${dt}<br><strong>Cashier:</strong> ${escapeHtml(session.user)}</div>
+                    </div>
+                    <table class="scr-table">
+                        <thead><tr><th style="width:5%; text-align:center;">S.No.</th><th style="width:45%;">Description of Goods</th><th style="width:6%; text-align:center;">Qty</th><th style="width:12%; text-align:right;">Price</th><th style="width:12%; text-align:right;">Taxable Amt</th><th style="width:10%; text-align:right;">Tax</th><th style="width:10%; text-align:right;">Net Amount</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                    <div class="scr-summary-box">
+                        <div class="scr-summary-left">
+                            <div><strong>Offer Coupon Matrix:</strong> ${appliedCoupons.length > 0 ? `Applied Codes [${escapeHtml(getActiveAppliedCouponCodeString())}]` : 'None Allocated'}</div>
+                            <div style="margin-top:4px; color: black !important;"><strong>Amount in Words:</strong> ${numToWords(gross.toFixed(2))}</div>
+                            <div style="margin-top:10px; font-size:11px; color: black !important;"><strong>Terms & Remarks Note:</strong> ${escapeHtml(config.terms)}</div>
+                        </div>
+                        <div class="scr-summary-right">
+                            <div class="summary-row"><span>SUB TOTAL :</span><span>${fmtCurrency(base)}</span></div>
+                            <div class="summary-row"><span>COUPON REDEEM :</span><span>-${fmtCurrency(discountAmt)}</span></div>
+                            <div class="summary-row"><span>TAX TOTAL (${config.gst}%) :</span><span>${fmtCurrency(gstAmt)}</span></div>
+                            <div class="summary-row" style="font-weight:bold; background:#e2e8f0 !important; color: black !important;"><span>NET VALUE DUE :</span><span>${fmtCurrency(gross)}</span></div>
+                        </div>
+                    </div>
+                    <div class="scr-payment-details-box">${corporatePaymentSection}</div>
+                </div>
+            `;
+
+            // Deduct ERP records levels and save logs state maps
+            cart.forEach(i => { let t = products.find(x => x.id === i.id); if(t) t.stock -= i.quantity; });
+            localStorage.setItem('n_prod', JSON.stringify(products));
+
+            historyDb.push({ dt: dt, dateKey: getTodayDateKey(), txn: txn, cashier: session.user, customer: crmName, phone: crmPhone, amt: gross, disc: discountAmt, tax: gstAmt, method: isSplitPayment ? "Split" : (c>0?"Cash":u>0?"UPI":"Card"), cardTxnId: cardTxnId || '', invoiceHtmlSnapshot: globalCachedActivePrintMarkupTemplate });
+            localStorage.setItem('n_hist', JSON.stringify(historyDb));
+
+            // Persist customer record for future auto-fill / repeat visits
+            saveCustomerRecord(crmName, crmPhone);
+
+            // SINGLE-CLICK FLOW: settle and immediately open the print dialog
+            invokeHardwarePrinterCanvasThread();
+        }
+
+        function invokeHardwarePrinterCanvasThread() {
+            if(!globalCachedActivePrintMarkupTemplate) return;
+            
+            // Inject layout values directly onto single frame thread channels
+            document.getElementById('print-canvas-thread-slot').innerHTML = globalCachedActivePrintMarkupTemplate;
+            
+            // Call browser execution Preview layer rules
+            window.print();
+
+            // Auto purge structures arrays to clean checkout workspace elements cycles
+            cart = []; appliedCoupons = [];
+            document.getElementById('inp-coupon-code').value = '';
+            document.getElementById('inp-coupon-code').style.borderColor = 'var(--panel-border)';
+            document.getElementById('split-card-txnid').value = '';
+            renderAppliedCouponChips();
+            document.getElementById('crm-phone').value = ''; document.getElementById('crm-name').value = ''; 
+
+            globalCachedActivePrintMarkupTemplate = "";
+            updateCartCalculations();
+            document.getElementById('print-canvas-thread-slot').innerHTML = ''; 
+            renderCatalog();
+            showToast("Invoice settled and sent to printer.");
+        }
+
+        /* === ERP STORAGE CONTROL === */
+        function renderERP() {
+            document.getElementById('erp-table').innerHTML = products.map(p => `
+                <tr>
+                    <td><strong style="color:#fff;">${escapeHtml(p.name)}</strong></td>
+                    <td><div style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted);">H:${escapeHtml(p.hsn)}<br>S:${escapeHtml(p.sno)}</div></td>
+                    <td style="color:var(--primary); font-weight:700;">${fmtCurrency(p.price)}</td>
+                    <td><span style="padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; background:${p.stock>config.lowStock?'rgba(255,255,255,0.06)':'rgba(239, 68, 68, 0.15)'}; color:${p.stock>config.lowStock?'#fff':'var(--danger)'};">${p.stock}</span></td>
+                    <td>
+                        <button style="background:var(--primary); color:#fff; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px;" onclick="editERP(${p.id})">Edit</button>
+                        <button style="background:var(--danger); color:#fff; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px;" onclick="delERP(${p.id})">Del</button>
+                    </td>
+                </tr>
+            `).join('');
+            renderSystemSnapshot();
+        }
+
+        function editERP(id) {
+            let p = products.find(x => x.id === id); if(!p) return;
+            document.getElementById('erp-id').value = p.id; document.getElementById('erp-name').value = p.name;
+            document.getElementById('erp-price').value = p.price; document.getElementById('erp-stock').value = p.stock;
+            document.getElementById('erp-hsn').value = p.hsn; document.getElementById('erp-sno').value = p.sno;
+            document.getElementById('inv-form-title').innerText = `Editing: ${p.name}`;
+        }
+
+        function clearERPForm() {
+            document.getElementById('erp-id').value = '';
+            document.querySelectorAll('.input-box').forEach(i => { if(i.id.startsWith('erp-')) i.value = ''; });
+            document.getElementById('inv-form-title').innerText = 'Add New Stock Node';
+        }
+
+        function saveERPProduct() {
+            const id = document.getElementById('erp-id').value; const name = document.getElementById('erp-name').value.trim();
+            const price = parseFloat(document.getElementById('erp-price').value); const stock = parseInt(document.getElementById('erp-stock').value);
+            const hsn = document.getElementById('erp-hsn').value.trim() || '85171300'; const sno = document.getElementById('erp-sno').value.trim() || 'SKU-' + Date.now().toString().slice(-4);
+            if(!name) { alert("Product name is required."); return; }
+            if(isNaN(price) || price < 0) { alert("Enter a valid, non-negative price."); return; }
+            if(isNaN(stock) || stock < 0) { alert("Enter a valid, non-negative stock count."); return; }
+            if(id) { let idx = products.findIndex(x => x.id == id); products[idx] = { id:parseInt(id), name, price, stock, hsn, sno }; }
+            else { products.push({ id: Date.now(), name, price, stock, hsn, sno }); }
+            localStorage.setItem('n_prod', JSON.stringify(products)); renderERP(); renderCatalog();
+            clearERPForm();
+            showToast("Stock node saved.");
+        }
+
+        function delERP(id) { if(confirm("Remove item index permanently?")) { products = products.filter(x => x.id != id); localStorage.setItem('n_prod', JSON.stringify(products)); renderERP(); renderCatalog(); showToast("Product removed."); } }
+
+        function loadConfigUI() {
+            document.getElementById('cfg-name').value = config.name; document.getElementById('cfg-gst').value = config.gst;
+            document.getElementById('cfg-upi').value = config.upi; document.getElementById('cfg-print-mode').value = config.mode;
+            document.getElementById('cfg-terms').value = config.terms;
+            document.getElementById('cfg-currency-symbol').value = config.currency;
+            document.getElementById('cfg-currency-code').value = config.currencyCode;
+            document.getElementById('cfg-invoice-prefix').value = config.invoicePrefix;
+            document.getElementById('cfg-low-stock').value = config.lowStock;
+            renderPreviewBoxes();
+            renderSystemSnapshot();
+        }
+
+        function renderPreviewBoxes() {
+            const logoBox = document.getElementById('preview-logo'); const qrBox = document.getElementById('preview-qr');
+            logoBox.innerHTML = b64Logo ? `<img src="${b64Logo}" style="max-height:100%; max-width:100%; object-fit:contain;">` : '<span style="font-size:10px; color:var(--text-muted);">No Logo</span>';
+            qrBox.innerHTML = b64Qr ? `<img src="${b64Qr}" style="max-height:100%; max-width:100%; object-fit:contain;">` : '<span style="font-size:10px; color:var(--text-muted);">No QR Code</span>';
+        }
+
+        function purgeAsset(type) {
+            if(confirm(`Erase active ${type === 'logo' ? 'Logo' : 'UPI QR Code'} asset?`)) {
+                if(type === 'logo') { b64Logo = ''; localStorage.removeItem('n_logo'); } else { b64Qr = ''; localStorage.removeItem('n_qr'); }
+                renderPreviewBoxes();
+            }
+        }
+
+        function uploadBase64(input, type) {
+            const file = input.files[0]; if(!file) return; const reader = new FileReader();
+            reader.onload = e => { if(type === 'logo') { b64Logo = e.target.result; } else { b64Qr = e.target.result; } renderPreviewBoxes(); }; reader.readAsDataURL(file);
+        }
+
+        function saveConfig() {
+            config.name = document.getElementById('cfg-name').value.trim() || "NexusPOS"; config.gst = parseFloat(document.getElementById('cfg-gst').value) || 0;
+            config.upi = document.getElementById('cfg-upi').value.trim(); config.mode = document.getElementById('cfg-print-mode').value;
+            config.terms = document.getElementById('cfg-terms').value.trim();
+            config.currency = document.getElementById('cfg-currency-symbol').value.trim() || '₹';
+            config.currencyCode = (document.getElementById('cfg-currency-code').value.trim() || 'INR').toUpperCase();
+            config.invoicePrefix = (document.getElementById('cfg-invoice-prefix').value.trim() || 'TXN').toUpperCase();
+            config.lowStock = parseInt(document.getElementById('cfg-low-stock').value) || 0;
+            localStorage.setItem('n_cfg', JSON.stringify(config));
+            if(b64Logo) localStorage.setItem('n_logo', b64Logo); if(b64Qr) localStorage.setItem('n_qr', b64Qr);
+            document.getElementById('auth-title').innerText = config.name; document.getElementById('brand-name-display').innerText = config.name;
+            renderCatalog(); if(cart.length) updateCartCalculations();
+            showToast("Global parameters locked.");
+        }
+
+        /* === BRAND THEME STUDIO === */
+        function applyTheme() {
+            const root = document.documentElement;
+            root.style.setProperty('--primary', theme.primary);
+            root.style.setProperty('--primary-glow', hexToRgba(theme.primary, 0.4));
+            root.style.setProperty('--accent', theme.accent);
+            root.style.setProperty('--success', theme.success);
+            root.style.setProperty('--warning', theme.warning);
+            root.style.setProperty('--danger', theme.danger);
+            root.style.setProperty('--catalog-col-min', theme.density + 'px');
+            loadGoogleFont(theme.font);
+            root.style.setProperty('--font-ui', `'${theme.font}', sans-serif`);
+        }
+
+        function hexToRgba(hex, alpha) {
+            hex = (hex || '#3b82f6').replace('#','');
+            if(hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+            const r = parseInt(hex.substring(0,2),16), g = parseInt(hex.substring(2,4),16), b = parseInt(hex.substring(4,6),16);
+            return `rgba(${r||0}, ${g||0}, ${b||0}, ${alpha})`;
+        }
+
+        let loadedFontFamilies = { 'Plus Jakarta Sans': true };
+        function loadGoogleFont(family) {
+            if(loadedFontFamilies[family]) return; loadedFontFamilies[family] = true;
+            const link = document.createElement('link'); link.rel = 'stylesheet';
+            link.href = `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, '+')}:wght@300;400;500;600;700;800&display=swap`;
+            document.head.appendChild(link);
+        }
+
+        function loadThemeUI() {
+            document.getElementById('theme-primary').value = theme.primary;
+            document.getElementById('theme-accent').value = theme.accent;
+            document.getElementById('theme-success').value = theme.success;
+            document.getElementById('theme-warning').value = theme.warning;
+            document.getElementById('theme-danger').value = theme.danger;
+            document.getElementById('theme-font').value = theme.font;
+            document.getElementById('theme-density').value = theme.density;
+            document.getElementById('density-label').innerText = theme.density + 'px';
+            document.getElementById('theme-density').oninput = e => { document.getElementById('density-label').innerText = e.target.value + 'px'; };
+        }
+
+        function applyThemePreset(name) {
+            const presets = {
+                quantum: { primary: '#3b82f6', accent: '#8b5cf6', success: '#10b981', warning: '#f59e0b', danger: '#ef4444' },
+                emerald: { primary: '#10b981', accent: '#06b6d4', success: '#22c55e', warning: '#f59e0b', danger: '#ef4444' },
+                sunset:  { primary: '#f97316', accent: '#ec4899', success: '#10b981', warning: '#eab308', danger: '#dc2626' },
+                mono:    { primary: '#64748b', accent: '#94a3b8', success: '#22c55e', warning: '#eab308', danger: '#ef4444' }
+            };
+            const p = presets[name]; if(!p) return;
+            document.getElementById('theme-primary').value = p.primary; document.getElementById('theme-accent').value = p.accent;
+            document.getElementById('theme-success').value = p.success; document.getElementById('theme-warning').value = p.warning;
+            document.getElementById('theme-danger').value = p.danger;
+        }
+
+        function saveTheme() {
+            theme.primary = document.getElementById('theme-primary').value;
+            theme.accent = document.getElementById('theme-accent').value;
+            theme.success = document.getElementById('theme-success').value;
+            theme.warning = document.getElementById('theme-warning').value;
+            theme.danger = document.getElementById('theme-danger').value;
+            theme.font = document.getElementById('theme-font').value;
+            theme.density = parseInt(document.getElementById('theme-density').value) || 220;
+            localStorage.setItem('n_theme', JSON.stringify(theme));
+            applyTheme(); renderCatalog();
+            showToast("Brand theme applied across the interface.");
+        }
+
+        function resetThemeToDefault() {
+            if(!confirm("Reset all theme customizations to factory defaults?")) return;
+            theme = Object.assign({}, DEFAULT_THEME); localStorage.setItem('n_theme', JSON.stringify(theme));
+            applyTheme(); loadThemeUI(); renderCatalog();
+            showToast("Theme reset to factory default.");
+        }
+
+        /* === DATA CONTROL CENTER: BACKUP / RESTORE / RESET === */
+        function renderSystemSnapshot() {
+            const el = id => document.getElementById(id);
+            if(el('snap-products')) el('snap-products').innerText = products.length;
+            if(el('snap-users')) el('snap-users').innerText = users.length;
+            if(el('snap-coupons')) el('snap-coupons').innerText = coupons.length;
+            if(el('snap-history')) el('snap-history').innerText = historyDb.length;
+            if(el('snap-customers')) el('snap-customers').innerText = customers.length;
+        }
+
+        function exportFullBackup() {
+            const snapshot = { version: 1, exportedAt: new Date().toISOString(), products, users, coupons, historyDb, customers, config, theme, b64Logo, b64Qr };
+            const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.setAttribute('hidden', ''); a.setAttribute('href', url); a.setAttribute('download', `nexuspos_backup_${Date.now()}.json`);
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            showToast("Full system backup exported.");
+        }
+
+        function importFullBackup(input) {
+            const file = input.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(!confirm("This will overwrite all current products, users, coupons, ledger history and theme settings. Continue?")) { input.value = ''; return; }
+                    if(Array.isArray(data.products)) products = data.products;
+                    if(Array.isArray(data.users)) users = data.users;
+                    if(Array.isArray(data.coupons)) coupons = data.coupons;
+                    if(Array.isArray(data.historyDb)) historyDb = data.historyDb;
+                    if(Array.isArray(data.customers)) customers = data.customers;
+                    if(data.config) config = Object.assign({}, DEFAULT_CONFIG, data.config);
+                    if(data.theme) theme = Object.assign({}, DEFAULT_THEME, data.theme);
+                    if(data.b64Logo) b64Logo = data.b64Logo; if(data.b64Qr) b64Qr = data.b64Qr;
+
+                    localStorage.setItem('n_prod', JSON.stringify(products)); localStorage.setItem('n_users', JSON.stringify(users));
+                    localStorage.setItem('n_coupons', JSON.stringify(coupons)); localStorage.setItem('n_hist', JSON.stringify(historyDb));
+                    localStorage.setItem('n_customers', JSON.stringify(customers));
+                    localStorage.setItem('n_cfg', JSON.stringify(config)); localStorage.setItem('n_theme', JSON.stringify(theme));
+                    if(b64Logo) localStorage.setItem('n_logo', b64Logo); if(b64Qr) localStorage.setItem('n_qr', b64Qr);
+
+                    applyTheme(); loadThemeUI(); loadConfigUI(); loadAdminUsers(); renderCouponAdministrationTable(); renderCatalog(); populateCustomerDatalist();
+                    showToast("Backup restored successfully.");
+                } catch(err) { alert("Restore failed: invalid backup file."); }
+                input.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function factoryResetSystem() {
+            if(!confirm("⚠️ This permanently wipes ALL products, coupons, sales history, customers, branding, business config and theme data — leaving a completely blank system with zero sample data left behind. Your login will be reset to the default admin account (admin / admin123). This cannot be undone. Continue?")) return;
+            if(!confirm("Final confirmation: ERASE EVERYTHING and restore a blank system with only the default admin login. Proceed?")) return;
+
+            // Persist genuinely EMPTY state for every store (not just remove the keys) so that
+            // none of the app's built-in hardcoded demo/sample records — products, coupons,
+            // customers, sales history, or the seeded business config (name/UPI/terms) — can
+            // re-seed themselves on the next page load. Removing a key would fall back to those
+            // demo defaults; writing an explicit empty value does not.
+            localStorage.setItem('n_prod', JSON.stringify([]));
+            localStorage.setItem('n_coupons', JSON.stringify([]));
+            localStorage.setItem('n_hist', JSON.stringify([]));
+            localStorage.setItem('n_customers', JSON.stringify([]));
+            localStorage.setItem('n_cfg', JSON.stringify({ name: '', upi: '', gst: 0, mode: 'A4', terms: '', currency: '₹', currencyCode: 'INR', invoicePrefix: '', lowStock: 0 }));
+            localStorage.setItem('n_theme', JSON.stringify(DEFAULT_THEME));
+            localStorage.removeItem('n_logo');
+            localStorage.removeItem('n_qr');
+
+            // Users are the one exception: reset to a single default admin login so you're
+            // never permanently locked out of the system after a factory reset.
+            localStorage.setItem('n_users', JSON.stringify([{ user: 'admin', pass: 'admin123', role: 'admin', inv: true }]));
+
+            location.reload();
+        }
+
+        function loadAdminUsers() {
+            document.getElementById('adm-user-list').innerHTML = users.map(u => `<tr><td style="color:#fff; font-weight:bold;">${escapeHtml(u.user)}</td><td><span style="background:rgba(255,255,255,0.06); padding:2px 8px; border-radius:4px; font-size:10px;">${escapeHtml(u.role.toUpperCase())}</span></td><td>${u.inv ? 'Yes' : 'No'}</td><td style="font-family:var(--font-mono); color:var(--warning);">${escapeHtml(u.pass)}</td><td><button type="button" class="user-action-btn" data-edit-user="${escapeHtml(u.user)}">Edit</button><button type="button" class="user-action-btn danger" data-del-user="${escapeHtml(u.user)}">Del</button></td></tr>`).join('');
+            renderSystemSnapshot();
+        }
+
+        // Event delegation for user Edit/Delete (safe against special characters in usernames)
+        document.addEventListener('click', e => {
+            const editBtn = e.target.closest('[data-edit-user]');
+            if(editBtn) { editUserToForm(editBtn.dataset.editUser); return; }
+            const delBtn = e.target.closest('[data-del-user]');
+            if(delBtn) { deleteUser(delBtn.dataset.delUser); return; }
+        });
+
+        function editUserToForm(username) {
+            const u = users.find(x => x.user === username); if(!u) return;
+            document.getElementById('adm-editing-original-user').value = u.user;
+            document.getElementById('adm-user').value = u.user;
+            document.getElementById('adm-pass').value = u.pass;
+            document.getElementById('adm-role').value = u.role;
+            document.getElementById('adm-inv').checked = !!u.inv;
+        }
+
+        function clearUserForm() {
+            document.getElementById('adm-editing-original-user').value = '';
+            document.getElementById('adm-user').value = ''; document.getElementById('adm-pass').value = '';
+            document.getElementById('adm-role').value = 'cashier'; document.getElementById('adm-inv').checked = false;
+        }
+
+        function deleteUser(username) {
+            const target = users.find(x => x.user === username); if(!target) return;
+            if(session && session.user === username) { alert("You can't delete the account you're currently logged in as."); return; }
+            const adminCount = users.filter(x => x.role === 'admin').length;
+            if(target.role === 'admin' && adminCount <= 1) { alert("Can't delete the last remaining admin account — the system would become inaccessible."); return; }
+            if(!confirm(`Permanently remove operator "${username}"?`)) return;
+            users = users.filter(x => x.user !== username);
+            localStorage.setItem('n_users', JSON.stringify(users));
+            if(document.getElementById('adm-editing-original-user').value === username) clearUserForm();
+            loadAdminUsers();
+            showToast("Operator removed.");
+        }
+
+        function saveUser() {
+            const originalUser = document.getElementById('adm-editing-original-user').value;
+            const u = document.getElementById('adm-user').value.trim(); const p = document.getElementById('adm-pass').value.trim();
+            const r = document.getElementById('adm-role').value; const i = document.getElementById('adm-inv').checked; if(!u || !p) return;
+
+            if(originalUser) {
+                // Editing an existing operator (rename-aware)
+                let idx = users.findIndex(x => x.user === originalUser); if(idx === -1) return;
+                if(originalUser.toLowerCase() !== u.toLowerCase() && users.some(x => x.user.toLowerCase() === u.toLowerCase())) { alert("Another operator already uses that ID."); return; }
+                if(users[idx].role === 'admin' && r !== 'admin' && users.filter(x => x.role === 'admin').length <= 1) { alert("Can't demote the last remaining admin account."); return; }
+                users[idx] = { user: u, pass: p, role: r, inv: r === 'admin' ? true : i };
+            } else {
+                let idx = users.findIndex(x => x.user.toLowerCase() === u.toLowerCase());
+                if(idx > -1) { users[idx].pass = p; users[idx].role = r; users[idx].inv = r==='admin'?true:i; }
+                else { users.push({ user:u, pass:p, role:r, inv: r==='admin'?true:i }); }
+            }
+            localStorage.setItem('n_users', JSON.stringify(users)); loadAdminUsers();
+            clearUserForm();
+            showToast("Operator directory updated.");
+        }
+
+        function renderAnalytics() {
+            const todayKey = getTodayDateKey();
+            const todayRecords = historyDb.filter(h => getRecordDateKey(h) === todayKey);
+
+            const gross = todayRecords.reduce((s,x)=>s+x.amt,0); const tax = todayRecords.reduce((s,x)=>s+x.tax,0); const disc = todayRecords.reduce((s,x)=>s+x.disc,0);
+            document.getElementById('stat-rev').innerText = fmtCurrency(gross); document.getElementById('stat-inv').innerText = todayRecords.length;
+            document.getElementById('stat-tax').innerText = fmtCurrency(tax); document.getElementById('stat-disc').innerText = fmtCurrency(disc);
+
+            const grossTotal = historyDb.reduce((s,x)=>s+x.amt,0); const taxTotal = historyDb.reduce((s,x)=>s+x.tax,0); const discTotal = historyDb.reduce((s,x)=>s+x.disc,0);
+            document.getElementById('stat-rev-total').innerText = fmtCurrency(grossTotal); document.getElementById('stat-inv-total').innerText = historyDb.length;
+            document.getElementById('stat-tax-total').innerText = fmtCurrency(taxTotal); document.getElementById('stat-disc-total').innerText = fmtCurrency(discTotal);
+
+            renderLedgerTable();
+            renderDailyRevenueChart();
+
+            let staffSalesMap = {};
+            users.forEach(u => { staffSalesMap[u.user] = { count: 0, revenue: 0 }; });
+            todayRecords.forEach(h => {
+                let cashierKey = h.cashier || "admin";
+                if(!staffSalesMap[cashierKey]) { staffSalesMap[cashierKey] = { count: 0, revenue: 0 }; }
+                staffSalesMap[cashierKey].count++; staffSalesMap[cashierKey].revenue += h.amt;
+            });
+
+            document.getElementById('ana-staff-performance-tbody').innerHTML = Object.keys(staffSalesMap).map(key => `
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.03)">
+                    <td style="padding:10px 0;"><strong>${escapeHtml(key.toUpperCase())}</strong></td>
+                    <td><span class="text-white font-medium">${staffSalesMap[key].count} bills</span></td>
+                    <td><span class="text-emerald-400 font-bold">${fmtCurrency(staffSalesMap[key].revenue)}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        /* === DAILY-SCOPED ANALYTICS + FULL-HISTORY LEDGER SEARCH === */
+        function getTodayDateKey() { return new Date().toISOString().slice(0, 10); }
+
+        function getRecordDateKey(h) {
+            if(h.dateKey) return h.dateKey;
+            const parsed = new Date(h.dt);
+            return isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 10);
+        }
+
+        function renderDailyRevenueChart() {
+            const ctx = document.getElementById('daily-revenue-chart'); if(!ctx) return;
+            if(chartInst) { chartInst.destroy(); chartInst = null; }
+            if(typeof Chart === 'undefined') return;
+
+            // Group all historic revenue by calendar date — each date is its own bar,
+            // so today's bar starts at zero and only reflects what's sold today.
+            let revenueByDate = {};
+            historyDb.forEach(h => {
+                const key = getRecordDateKey(h); if(!key) return;
+                revenueByDate[key] = (revenueByDate[key] || 0) + h.amt;
+            });
+
+            const todayKey = getTodayDateKey();
+            if(!(todayKey in revenueByDate)) revenueByDate[todayKey] = 0;
+
+            const sortedDates = Object.keys(revenueByDate).sort().slice(-7);
+
+            chartInst = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedDates,
+                    datasets: [{
+                        label: 'Revenue',
+                        data: sortedDates.map(d => revenueByDate[d]),
+                        backgroundColor: sortedDates.map(d => d === todayKey ? theme.primary : hexToRgba(theme.primary, 0.4)),
+                        borderRadius: 4,
+                        maxBarThickness: 28
+                    }]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { font: { size: 10 } } }, x: { ticks: { font: { size: 10 } } } } }
+            });
+        }
+
+        function filterLedgerHistory() { renderLedgerTable(); }
+
+        function renderLedgerTable() {
+            const query = (document.getElementById('ledger-search-input').value || '').trim().toLowerCase();
+
+            // Assign each ledger entry a serial number that restarts at 1 for every calendar day,
+            // counted in chronological order (the order entries actually occurred).
+            const dayCounters = {};
+            const withIdx = historyDb.map((h, i) => {
+                const dk = getRecordDateKey(h) || 'unknown';
+                dayCounters[dk] = (dayCounters[dk] || 0) + 1;
+                return { ...h, _idx: i, _dayNo: dayCounters[dk] };
+            });
+            let rows; let scopeLabel;
+
+            if(query) {
+                rows = withIdx.filter(h => {
+                    const dateKey = getRecordDateKey(h) || '';
+                    return h.txn.toLowerCase().includes(query) ||
+                        (h.cashier || '').toLowerCase().includes(query) ||
+                        (h.customer || '').toLowerCase().includes(query) ||
+                        (h.phone || '').toLowerCase().includes(query) ||
+                        dateKey.includes(query) ||
+                        (h.dt || '').toLowerCase().includes(query);
+                }).slice(-200).reverse();
+                scopeLabel = `Search results (${rows.length}) · click a row to view, print icon to reprint`;
+            } else {
+                rows = withIdx.slice(-200).reverse();
+                scopeLabel = "All ledger history · click a row to view, print icon to reprint";
+            }
+
+            document.getElementById('ledger-scope-label').innerText = `(${scopeLabel})`;
+
+            // Build rows with a straight-line divider inserted every time the day changes,
+            // so each day's ledger entries are visually separated from the next.
+            let tbodyHtml = '';
+            let lastDateKey = null;
+            rows.forEach(h => {
+                const dateKey = getRecordDateKey(h) || '—';
+                if(lastDateKey !== null && dateKey !== lastDateKey) {
+                    tbodyHtml += `<tr><td colspan="9" style="padding:0; border-top:2px solid var(--panel-border);"></td></tr>`;
+                }
+                lastDateKey = dateKey;
+                tbodyHtml += `
+                <tr class="history-row-clickable" onclick="openInvoiceArchiveModal(${h._idx})" title="Click to view invoice">
+                    <td style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">${h._dayNo}</td>
+                    <td style="font-size:11px; color:var(--text-muted);">${escapeHtml(dateKey)}</td>
+                    <td style="font-family:var(--font-mono); color:var(--primary);">${escapeHtml(h.txn)}</td>
+                    <td style="font-weight:bold; color:#fff;">${fmtCurrency(h.amt)}</td>
+                    <td><span style="background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px; font-size:10px;">${escapeHtml(h.method)}</span></td>
+                    <td style="font-size:11px;">${escapeHtml((h.cashier || 'admin').toUpperCase())}</td>
+                    <td style="font-size:11px;">${escapeHtml(h.customer || '—')}</td>
+                    <td style="font-size:11px; font-family:var(--font-mono);">${escapeHtml(h.phone || '—')}</td>
+                    <td><button data-print-idx="${h._idx}" title="Print invoice" style="background:var(--panel-bg); border:1px solid var(--panel-border); color:#fff; padding:4px 8px; border-radius:6px; font-size:12px; cursor:pointer;" onclick="event.stopPropagation(); reprintLedgerInvoice(${h._idx})">🖨️</button></td>
+                </tr>`;
+            });
+            document.getElementById('stat-history').innerHTML = tbodyHtml || `<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:20px;">${query ? 'No matching ledger entries' : 'No sales recorded yet'}</td></tr>`;
+        }
+
+        function reprintLedgerInvoice(idx) {
+            const record = historyDb[idx]; if(!record || !record.invoiceHtmlSnapshot) return;
+            document.getElementById('print-canvas-thread-slot').innerHTML = record.invoiceHtmlSnapshot;
+            window.print();
+            document.getElementById('print-canvas-thread-slot').innerHTML = '';
+        }
+
+        function resetAnalyticsDashboard() {
+            if(!session || session.role !== 'admin') return;
+            if(historyDb.length === 0) { showToast("Analytics ledger is already empty."); return; }
+            if(!confirm("⚠️ This permanently clears all sales history, revenue, tax and discount analytics. This cannot be undone. Continue?")) return;
+            historyDb = [];
+            localStorage.setItem('n_hist', JSON.stringify(historyDb));
+            renderAnalytics();
+            renderSystemSnapshot();
+            showToast("Analytics dashboard reset.");
+        }
+
+        function exportHistoryCSV() {
+            if(historyDb.length === 0) { showToast("No ledger entries to export yet."); return; }
+            let csv = "S.No,Date,Transaction ID,Cashier,Customer Name,Customer Number,Amount,Discount,Tax,Payment Summary,Card Txn ID\n";
+            const dayCounters = {};
+            historyDb.forEach(h => {
+                const dk = getRecordDateKey(h) || 'unknown';
+                dayCounters[dk] = (dayCounters[dk] || 0) + 1;
+                csv += `"${dayCounters[dk]}","${h.dt}","${h.txn}","${h.cashier||'admin'}","${h.customer||''}","${h.phone||''}","${h.amt}","${h.disc}","${h.tax}","${h.method}","${h.cardTxnId||''}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' }); const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.setAttribute('hidden', ''); a.setAttribute('href', url); a.setAttribute('download', 'ledger_export.csv');
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+
+        let currentArchiveIdx = null;
+        function openInvoiceArchiveModal(idx) { currentArchiveIdx = idx; document.getElementById('modal-invoice-body').innerHTML = historyDb[idx].invoiceHtmlSnapshot; document.getElementById('invoice-modal').style.display = 'flex'; }
+        function closeInvoiceModal() { document.getElementById('invoice-modal').style.display = 'none'; }
+    </script>
+</body>
+</html>
